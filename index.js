@@ -153,7 +153,7 @@ app.post("/tracking", authenticate, async (req, res, next) => {
         headers: { 'authorization': 'ShippoToken shippo_live_ba9a907276d40482bdc3557ac438d963c238470d' }
     });
     const data = await response.json();
-    if (data.tracking_status == "DELIVERED") {
+    if (data.tracking_status.status == "DELIVERED") {
         //if (true) {
         updateEntry("shippments", req.body.id, { status: "delivered" }, () => {
             console.log("Updated Record");
