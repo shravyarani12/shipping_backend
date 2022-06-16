@@ -80,7 +80,11 @@ app.use(function (req, res, next) {
     next();
 });
 
-
+app.post("/test", (req, res, next) => {
+    return res.status(200).json({
+        "message": "Welcome"
+    })
+});
 
 app.post("/login", (req, res, next) => {
     setupDataListener("profile", (arr) => {
