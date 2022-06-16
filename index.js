@@ -123,7 +123,7 @@ app.post("/login", (req, res, next) => {
 app.post("/register", (req, res, next) => {
     console.log("register")
     console.log(req)
-    fbHelper.storeHistoryItem("profile", { ...req.body }, () => {
+    storeHistoryItem("profile", { ...req.body }, () => {
         return res.status(200).json({
             "message": "registration done"
         })
