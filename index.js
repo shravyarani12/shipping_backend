@@ -15,9 +15,9 @@ import dotenv from "dotenv"
 dotenv.config();
 const app = express();
 import cors from 'cors';
-
+import { uuid } from 'uuidv4';
 import fetch from 'node-fetch';
-import { initDBConnection, setupDataListener, storeHistoryItem, updateEntry } from "./helpers/fb-history.js";
+import { initDBConnection, setupDataListener, storeHistoryItem, updateEntry, getEntry } from "./helpers/fb-history.js";
 
 initDBConnection();
 
@@ -35,7 +35,7 @@ app.use(cors());
 
 
 setInterval(() => {
-    setupDataListener("shippments", async(arr) => {
+    setupDataListener("shippments", async (arr) => {
         for (let i = 0; i < arr.length; i++) {
             let item = arr[i]
             if (item.status != "DELIVERED") {
@@ -46,7 +46,7 @@ setInterval(() => {
                     headers: { 'authorization': 'ShippoToken shippo_live_ba9a907276d40482bdc3557ac438d963c238470d' }
                 });
                 const data = await response.json();
-                if (data.tracking_status.status == "DELIVERED") {
+                if (data.tracking_status?.status && data.tracking_status?.status == "DELIVERED") {
                     //if (true) {
                     updateEntry("shippments", req.body.id, { status: "delivered" }, () => {
                         console.log("Updated Record");
@@ -55,7 +55,7 @@ setInterval(() => {
             }
         }
     })
-      
+
 }, 300000)
 
 function authenticate(req, res, next) {
@@ -134,10 +134,33 @@ app.post("/addShippment", authenticate, (req, res, next) => {
     console.log("addShipment")
     let myDate = new Date();
     myDate = myDate.toString();
-    storeHistoryItem("shippments", { ...req.body, status: "unknown", userId: req.user, dateAdded: myDate }, () => {
-        return res.status(200).json({
-            "message": "added shippment done"
-        })
+    let uId = uuid();
+    storeHistoryItem("shippments", { ...req.body, uId: uId, status: "unknown", userId: req.user, dateAdded: myDate }, async (err,id) => {
+        let myDate = new Date();
+        myDate = myDate.toString();
+
+        const uri = `https://api.goshippo.com/tracks/?carrier=${req.body.shipper}&tracking_number=${req.body.trackingNum}`
+        try {
+            const response = await fetch(uri, {
+                method: 'post',
+                body: null,
+                headers: { 'authorization': 'ShippoToken shippo_live_ba9a907276d40482bdc3557ac438d963c238470d' }
+            });
+            const data = await response.json();
+            if (data.tracking_status?.status && data.tracking_status?.status == "DELIVERED") {
+
+                updateEntry("shippments", id, { status: "delivered" }, () => {
+                    console.log("Deliverd Updated Record");
+                    return res.status(200).json(data)
+                })
+
+            } else {
+                return res.status(200).json(data)
+            }
+        }
+        catch (err) {
+            return res.status(500).json({ message: "Internal Server Error" })
+        }
     })
 })
 
@@ -153,19 +176,23 @@ app.post("/tracking", authenticate, async (req, res, next) => {
         headers: { 'authorization': 'ShippoToken shippo_live_ba9a907276d40482bdc3557ac438d963c238470d' }
     });
     const data = await response.json();
-    if (data.tracking_status.status == "DELIVERED") {
+    if (data.tracking_status?.status && data.tracking_status?.status == "DELIVERED") {
         //if (true) {
         updateEntry("shippments", req.body.id, { status: "delivered" }, () => {
             console.log("Updated Record");
+            return res.status(200).json(data)
         })
+    } else {
+        return res.status(200).json(data)
     }
-    return res.status(200).json(data)
+
 })
 
 
 
 
 app.get("/getShipments", authenticate, (req, res, next) => {
+    console.log("get")
     setupDataListener("shippments", (arr) => {
         let ps = [];
         let ds = [];
@@ -177,14 +204,11 @@ app.get("/getShipments", authenticate, (req, res, next) => {
                     ps.push(arr[i])
                 }
             }
-            if (i == arr.length - 1) {
-                return res.status(200).json({
-                    "pendingShipments": ps,
-                    "deliveredShipments": ds,
-                })
-            }
         }
-
+        return res.status(200).json({
+            "pendingShipments": ps,
+            "deliveredShipments": ds,
+        })
     })
 })
 
