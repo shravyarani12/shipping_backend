@@ -80,7 +80,15 @@ app.use(function (req, res, next) {
     next();
 });
 
-app.post("/test", (req, res, next) => {
+
+app.get("/", (req, res, next) => {
+    return res.status(200).json({
+        "message": "Home page"
+    })
+});
+
+
+app.get("/test", (req, res, next) => {
     return res.status(200).json({
         "message": "Welcome"
     })
