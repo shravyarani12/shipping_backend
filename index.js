@@ -18,7 +18,7 @@ import cors from 'cors';
 import { uuid } from 'uuidv4';
 import fetch from 'node-fetch';
 import { initDBConnection, setupDataListener, storeHistoryItem, updateEntry, getEntry } from "./helpers/fb-history.js";
-
+import axios from "axios";
 initDBConnection();
 
 
@@ -36,9 +36,25 @@ app.use(cors());
 
 setInterval(() => {
     setupDataListener("shippments", async (arr) => {
+        console.log("Cron job started");
         for (let i = 0; i < arr.length; i++) {
             let item = arr[i]
             if (item.status != "DELIVERED") {
+                if(item.trackingNum.split("_")[0]=="FF"){
+                    console.log("Dummy records")
+                    updateEntry("shippments", item.id, { status: "DELIVERED" }, () => {
+                        console.log("Updated Record");
+                        axios.post(`https://app.nativenotify.com/api/indie/notification`, {
+                            subID: item.uId,
+                            appId: 2988,
+                            appToken: 'KVpPJHcdkZMXyaAsAvsmhz',
+                            title: `Delivery Update`,
+                            message: `${item.name} is Delivered`
+                       });
+
+                    })
+                }
+                try{
                 const uri = `https://api.goshippo.com/tracks/?carrier=${item.shipper}&tracking_number=${item.trackingNum}`
                 const response = await fetch(uri, {
                     method: 'post',
@@ -48,15 +64,27 @@ setInterval(() => {
                 const data = await response.json();
                 if (data.tracking_status?.status && data.tracking_status?.status == "DELIVERED") {
                     //if (true) {
-                    updateEntry("shippments", req.body.id, { status: "delivered" }, () => {
+                    updateEntry("shippments", item.id, { status: "DELIVERED" }, () => {
                         console.log("Updated Record");
+                        axios.post(`https://app.nativenotify.com/api/indie/notification`, {
+                            subID: item.uId,
+                            appId: 2988,
+                            appToken: 'KVpPJHcdkZMXyaAsAvsmhz',
+                            title: `Delivery Update`,
+                            message: `${item.name} is Delivered`
+                       });
+
                     })
+                }}
+                catch(err){
+                    console.log(err)
                 }
             }
         }
+        console.log("Cron job Ended");
     })
 
-}, 300000)
+}, 30000)
 
 function authenticate(req, res, next) {
     authenticateToken(req, res, next, (err, user) => {
@@ -66,6 +94,7 @@ function authenticate(req, res, next) {
         }
         else {
             req.user = user.user;
+            req.uId=user.uId
             next()
         }
     })
@@ -102,10 +131,11 @@ app.post("/login", (req, res, next) => {
             let item = arr[i];
             if (item.email == req.body.email && item.password == req.body.password) {
                 check = true;
-                generateAccessToken(item.firstName + "_" + item.lastName, (err, token) => {
+                generateAccessToken({userName:item.firstName + "_" + item.lastName,uId:item.id}, (err, token) => {
                     console.log("Login Success")
                     return res.status(200).json({
                         token: token,
+                        id:item.id,
                         "message": "login successful"
                     })
                 })
@@ -135,7 +165,7 @@ app.post("/addShippment", authenticate, (req, res, next) => {
     let myDate = new Date();
     myDate = myDate.toString();
     let uId = uuid();
-    storeHistoryItem("shippments", { ...req.body, uId: uId, status: "unknown", userId: req.user, dateAdded: myDate }, async (err,id) => {
+    storeHistoryItem("shippments", { ...req.body, uId: req.uId, status: "unknown", userId: req.user, dateAdded: myDate }, async (err,id) => {
         let myDate = new Date();
         myDate = myDate.toString();
 
@@ -151,6 +181,14 @@ app.post("/addShippment", authenticate, (req, res, next) => {
 
                 updateEntry("shippments", id, { status: "delivered" }, () => {
                     console.log("Deliverd Updated Record");
+                    axios.post(`https://app.nativenotify.com/api/indie/notification`, {
+                        subID: req.uId,
+                        appId: 2988,
+                        appToken: 'KVpPJHcdkZMXyaAsAvsmhz',
+                        title: `Delivery Update`,
+                        message: `${req.body.name} is Delivered`
+                        
+                   });
                     return res.status(200).json(data)
                 })
 
@@ -192,13 +230,17 @@ app.post("/tracking", authenticate, async (req, res, next) => {
 
 
 app.get("/getShipments", authenticate, (req, res, next) => {
+
+   
+
+
     console.log("get")
     setupDataListener("shippments", (arr) => {
         let ps = [];
         let ds = [];
         for (let i = 0; i < arr.length; i++) {
             if (arr[i].userId == req.user) {
-                if (arr[i].status == "delivered") {
+                if (arr[i].status == "DELIVERED") {
                     ds.push(arr[i])
                 } else {
                     ps.push(arr[i])

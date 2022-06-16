@@ -5,8 +5,8 @@ import jwt from "jsonwebtoken";
 
 
 
-export function generateAccessToken(username,callback) {
-    jwt.sign({user:username}, process.env.TOKEN_SECRET, {expiresIn: '7d'},(err,token)=>{
+export function generateAccessToken(object,callback) {
+    jwt.sign({...object}, process.env.TOKEN_SECRET, {expiresIn: '7d'},(err,token)=>{
         return callback(err,token)
     })
 }
@@ -19,7 +19,9 @@ export function authenticateToken(req, res, next,callback) {
 
     jwt.verify(token, process.env.TOKEN_SECRET, (err, detoken) => {
         let resp={
-            user:detoken.user
+            user:detoken.userName,
+            uId:detoken.uId
+
         }
         return callback(err,resp)
     })

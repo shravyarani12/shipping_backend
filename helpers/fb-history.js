@@ -125,5 +125,3 @@ export function updateEntry(dbObj,key,data,callback) {
     
 }
 
-
-//module.exports={setupDataListener,setupDataProfileListener,initDBConnection,storeHistoryItem}
