@@ -17,7 +17,7 @@ const app = express();
 import cors from 'cors';
 import { uuid } from 'uuidv4';
 import fetch from 'node-fetch';
-import { initDBConnection, setupDataListener, storeHistoryItem, updateEntry, getEntry, singlesetupDataListener } from "./helpers/fb-history.js";
+import { initDBConnection, setupDataListener, storeHistoryItem, updateEntry, getEntry, deleteEntry,singlesetupDataListener } from "./helpers/fb-history.js";
 import axios from "axios";
 initDBConnection();
 
@@ -308,10 +308,6 @@ app.post("/tracking", authenticate, async (req, res, next) => {
 
 
 app.get("/getShipments", authenticate, (req, res, next) => {
-
-
-
-
     console.log("get")
     setupDataListener("shippments", (arr) => {
         let ps = [];
@@ -329,6 +325,23 @@ app.get("/getShipments", authenticate, (req, res, next) => {
             "pendingShipments": ps,
             "deliveredShipments": ds,
         })
+    })
+})
+
+
+app.post("/deleteShipments", authenticate, (req, res, next) => {
+    console.log("Delete")
+    deleteEntry("shippments",req.body.id,(err) => {
+        if(err){
+            return res.status(500).json({
+                "message":"Deleted Failed"
+            })
+        }else{
+            return res.status(200).json({
+                "message":"Deleted Succesfully"
+            })
+        }
+        
     })
 })
 

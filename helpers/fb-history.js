@@ -1,4 +1,4 @@
-import { getDatabase, onValue, set, ref, push,update,get }from "firebase/database";
+import { getDatabase, onValue, set, ref, push,update,get, remove }from "firebase/database";
 import { initializeApp } from "firebase/app";
 import { firebaseConfig } from "./fb-credentials.js";
 
@@ -162,3 +162,15 @@ export function updateEntry(dbObj,key,data,callback) {
     
 }
 
+
+
+export function deleteEntry(dbObj,key,callback) {
+    const db = getDatabase();
+    const reference = ref(db, `${dbObj}/${key}`);
+    remove(reference).then(()=>{
+        return callback(null,"done")
+    }).catch((error)=>{
+        return callback(error,null)
+    });
+    
+}
