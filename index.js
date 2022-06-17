@@ -59,12 +59,10 @@ setInterval(() => {
         for (let i = 0; i < arr.length; i++) {
             let item = arr[i]
             if (item.status != "DELIVERED") {
-                if (item.trackingNum.split("_")[0] == "FG") {
+                if (item.trackingNum.split("_")[0] == "FF") {
                     singlesetupDataListener(`profile/${item.uId}`, (userDetails) => {
                         updateEntry("shippments", item.id, { status: "DELIVERED" }, async () => {
                             console.log("Updated Record");
-                            
-
                             if (Expo.isExpoPushToken(userDetails["expoToken"])) {
                                 await sendPushNotification(userDetails["expoToken"], `${item.name} is Delivered, please check in App`);
                             }
@@ -246,6 +244,7 @@ app.post("/addShippment", authenticate, (req, res, next) => {
             });
             const data = await response.json();
             if (data.tracking_status?.status && data.tracking_status?.status == "DELIVERED") {
+               
                 singlesetupDataListener(`profile/${req.uId}`, (arr) => {
                     console.log(arr)
                     updateEntry("shippments", id, { status: "DELIVERED" }, async() => {
@@ -256,6 +255,7 @@ app.post("/addShippment", authenticate, (req, res, next) => {
                         }
                     })
                 })
+                return res.status(200).json(data);
                 // updateEntry("shippments", id, { status: "delivered" }, () => {
                 //     console.log("Deliverd Updated Record");
                 //     axios.post(`https://app.nativenotify.com/api/indie/notification`, {
