@@ -182,7 +182,8 @@ app.post("/login", (req, res, next) => {
             let item = arr[i];
             if (item.email == req.body.email && item.password == req.body.password) {
                 check = true;
-                updateEntry("profile", item.id, { expoToken: req.body.expoToken }, () => {
+                let expotoken=req.body.expoToken?req.body.expoToken:'';
+                updateEntry("profile", item.id, { expoToken:  }, () => {
                     console.log("Token updated: "+req.body.expoToken)
                     generateAccessToken({ userName: item.firstName + "_" + item.lastName, uId: item.id }, (err, token) => {
                         console.log("Login Success")
