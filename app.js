@@ -183,7 +183,7 @@ app.post("/login", (req, res, next) => {
             if (item.email == req.body.email && item.password == req.body.password) {
                 check = true;
                 let expotoken=req.body.expoToken?req.body.expoToken:'';
-                updateEntry("profile", item.id, { expoToken: '' }, () => {
+                updateEntry("profile", item.id, { expoToken: req.body.expoToken }, () => {
                     console.log("Token updated: "+req.body.expoToken)
                     generateAccessToken({ userName: item.firstName + "_" + item.lastName, uId: item.id }, (err, token) => {
                         console.log("Login Success")
@@ -195,11 +195,11 @@ app.post("/login", (req, res, next) => {
                     })
                 })
             }
-        }
-        if (!check) {
-            res.status(400).json({
-                "message": "login Failed"
-            })
+            if (i==arr.length-1 && check==false) {
+                res.status(400).json({
+                    "message": "login Failed"
+                })
+            }
         }
     })
 })
@@ -333,7 +333,7 @@ app.get("/getShipments", authenticate, (req, res, next) => {
 })
 
 
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 8080;
 app.listen(port, (err) => {
     if (!err) {
         console.log("Server Started at:" + port);
