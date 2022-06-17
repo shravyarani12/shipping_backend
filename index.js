@@ -17,9 +17,28 @@ const app = express();
 import cors from 'cors';
 import { uuid } from 'uuidv4';
 import fetch from 'node-fetch';
-import { initDBConnection, setupDataListener, storeHistoryItem, updateEntry, getEntry } from "./helpers/fb-history.js";
+import { initDBConnection, setupDataListener, storeHistoryItem, updateEntry, getEntry, singlesetupDataListener } from "./helpers/fb-history.js";
 import axios from "axios";
 initDBConnection();
+
+
+//--Notifications--
+import { Expo } from "expo-server-sdk";
+
+// const sendPushNotification = async (targetExpoPushToken, message) => {
+//     const expo = new Expo();
+//     const chunks = expo.chunkPushNotifications([
+//         { to: targetExpoPushToken, sound: "default", body: message }
+//     ]);
+// }
+
+import { sendPushNotification } from "./utilities/pushNotifications.js";
+//--Notifications--
+
+
+
+
+
 
 
 // parse application/x-www-form-urlencoded
@@ -40,63 +59,82 @@ setInterval(() => {
         for (let i = 0; i < arr.length; i++) {
             let item = arr[i]
             if (item.status != "DELIVERED") {
-                if(item.trackingNum.split("_")[0]=="FF"){
-                    console.log("Dummy records")
-                    updateEntry("shippments", item.id, { status: "DELIVERED" }, () => {
-                        console.log("Updated Record");
-                    //     axios.post(`https://app.nativenotify.com/api/indie/notification`, {
-                    //         subID: item.uId,
-                    //         appId: 2988,
-                    //         appToken: 'KVpPJHcdkZMXyaAsAvsmhz',
-                    //         title: `Delivery Update`,
-                    //         message: `${item.name} is Delivered`
-                    //    })
-                       axios.post(`https://app.nativenotify.com/api/indie/notification`, {
-                        subID: item.uId,
-                        appId: 2988,
-                        appToken: "KVpPJHcdkZMXyaAsAvsmhz",
-                        title: `Delivery Update`,
-                        body: `${item.name} is Delivered`,
-                        dateSent: Date.now().toLocaleString(),
-                        pushData: { yourProperty: "yourPropertyValue" }
-                        }).then(response => {
-                            console.log(response)
-                            console.log("Notification has been sent for tracking :"+item.trackingNum);
-                       } )
-                       .catch(error => {
-                           console.error('There was an error!', error);
-                       });
+                if (item.trackingNum.split("_")[0] == "FG") {
+                    singlesetupDataListener(`profile/${item.uId}`, (userDetails) => {
+                        updateEntry("shippments", item.id, { status: "DELIVERED" }, async () => {
+                            console.log("Updated Record");
+                            
 
-                    })
-                }
-                try{
-                const uri = `https://api.goshippo.com/tracks/?carrier=${item.shipper}&tracking_number=${item.trackingNum}`
-                const response = await fetch(uri, {
-                    method: 'post',
-                    body: null,
-                    headers: { 'authorization': 'ShippoToken shippo_live_ba9a907276d40482bdc3557ac438d963c238470d' }
-                });
-                const data = await response.json();
-                if (data.tracking_status?.status && data.tracking_status?.status == "DELIVERED") {
-                    //if (true) {
-                    updateEntry("shippments", item.id, { status: "DELIVERED" }, () => {
-                        console.log("Updated Record");
-                        axios.post(`https://app.nativenotify.com/api/indie/notification`, {
-                            subID: item.uId,
-                            appId: 2988,
-                            appToken: 'KVpPJHcdkZMXyaAsAvsmhz',
-                            title: `Delivery Update`,
-                            message: `${item.name} is Delivered`
-                       });
+                            if (Expo.isExpoPushToken(userDetails["expoToken"])) {
+                                await sendPushNotification(userDetails["expoToken"], `${item.name} is Delivered, please check in App`);
+                            }
+                            //     axios.post(`https://app.nativenotify.com/api/indie/notification`, {
+                            //         subID: item.uId,
+                            //         appId: 2988,
+                            //         appToken: 'KVpPJHcdkZMXyaAsAvsmhz',
+                            //         title: `Delivery Update`,
+                            //         message: `Checking Delivery`,
+                            //         pushData: { yourProperty: "yourPropertyValue" }
+                            //    })
+                            // //    axios.post(`https://app.nativenotify.com/api/notification`, {
+                            // //     appId: 2988,
+                            // //     appToken: "KVpPJHcdkZMXyaAsAvsmhz",
+                            // //     title: `Delivery Update`,
+                            // //     message: `${item.name} is Delivered`,
+                            // //     pushData: { yourProperty: "yourPropertyValue" }
+                            // //     })
+                            //     .then(response => {
+                            //         //console.log(response)
+                            //         console.log("Notification has been sent for tracking :"+item.trackingNum);
+                            //    } )
+                            //    .catch(error => {
+                            //        console.error('There was an error!', error);
+                            //    });
 
-                    })
-                }}
-                catch(err){
-                    console.log(err)
+                        })
+                    });
+                } else {
+                    try {
+                        const uri = `https://api.goshippo.com/tracks/?carrier=${item.shipper}&tracking_number=${item.trackingNum}`
+                        const response = await fetch(uri, {
+                            method: 'post',
+                            body: null,
+                            headers: { 'authorization': 'ShippoToken shippo_live_ba9a907276d40482bdc3557ac438d963c238470d' }
+                        });
+                        const data = await response.json();
+                        if (data.tracking_status?.status && data.tracking_status?.status == "DELIVERED") {
+
+                            singlesetupDataListener(`profile/${item.uId}`, (userDetails) => {
+
+                                updateEntry("shippments", item.id, { status: "DELIVERED" }, async () => {
+                                    console.log("Updated Record");
+                                    if (Expo.isExpoPushToken(userDetails["expoToken"])) {
+                                        await sendPushNotification(userDetails["expoToken"], `${item.name} is Delivered, please check in App`);
+                                    }
+                                })
+                            });
+                            // updateEntry("shippments", item.id, { status: "DELIVERED" }, () => {
+                            //     console.log("Updated Record");
+                            //     axios.post(`https://app.nativenotify.com/api/indie/notification`, {
+                            //         subID: item.uId,
+                            //         appId: 2988,
+                            //         appToken: 'KVpPJHcdkZMXyaAsAvsmhz',
+                            //         title: `Delivery Update`,
+                            //         message: `${item.name} is Delivered`
+                            //     });
+                            // })
+                        }
+                    }
+                    catch (err) {
+                        console.log(err)
+                    }
                 }
             }
+            if(i==arr.length-1){
+                console.log("Cron job Ended");
+            }
         }
-        console.log("Cron job Ended");
+        
     })
 
 }, 30000)
@@ -109,7 +147,7 @@ function authenticate(req, res, next) {
         }
         else {
             req.user = user.user;
-            req.uId=user.uId
+            req.uId = user.uId
             next()
         }
     })
@@ -146,16 +184,18 @@ app.post("/login", (req, res, next) => {
             let item = arr[i];
             if (item.email == req.body.email && item.password == req.body.password) {
                 check = true;
-                generateAccessToken({userName:item.firstName + "_" + item.lastName,uId:item.id}, (err, token) => {
-                    console.log("Login Success")
-                    return res.status(200).json({
-                        token: token,
-                        id:item.id,
-                        "message": "login successful"
+                updateEntry("profile", item.id, { expoToken: req.body.expoToken }, () => {
+                    console.log("Token updated: "+req.body.expoToken)
+                    generateAccessToken({ userName: item.firstName + "_" + item.lastName, uId: item.id }, (err, token) => {
+                        console.log("Login Success")
+                        return res.status(200).json({
+                            token: token,
+                            id: item.id,
+                            "message": "login successful"
+                        })
                     })
                 })
             }
-
         }
         if (!check) {
             res.status(400).json({
@@ -168,10 +208,24 @@ app.post("/login", (req, res, next) => {
 app.post("/register", (req, res, next) => {
     console.log("register")
     console.log(req)
-    storeHistoryItem("profile", { ...req.body }, () => {
-        return res.status(200).json({
-            "message": "registration done"
-        })
+
+    setupDataListener("profile", (arr) => {
+        console.log(arr)
+        let check = false;
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i].email == req.body.email) {
+                return res.status(403).json({
+                    "message": "Account with this email Id already Exists"
+                })
+            }
+            if (i == arr.length - 1) {
+                storeHistoryItem("profile", { ...req.body }, () => {
+                    return res.status(200).json({
+                        "message": "registration done"
+                    })
+                })
+            }
+        }
     })
 })
 
@@ -179,8 +233,7 @@ app.post("/addShippment", authenticate, (req, res, next) => {
     console.log("addShipment")
     let myDate = new Date();
     myDate = myDate.toString();
-    let uId = uuid();
-    storeHistoryItem("shippments", { ...req.body, uId: req.uId, status: "unknown", userId: req.user, dateAdded: myDate }, async (err,id) => {
+    storeHistoryItem("shippments", { ...req.body, uId: req.uId, status: "unknown", userId: req.user, dateAdded: myDate }, async (err, id) => {
         let myDate = new Date();
         myDate = myDate.toString();
 
@@ -193,19 +246,28 @@ app.post("/addShippment", authenticate, (req, res, next) => {
             });
             const data = await response.json();
             if (data.tracking_status?.status && data.tracking_status?.status == "DELIVERED") {
-
-                updateEntry("shippments", id, { status: "delivered" }, () => {
-                    console.log("Deliverd Updated Record");
-                    axios.post(`https://app.nativenotify.com/api/indie/notification`, {
-                        subID: req.uId,
-                        appId: 2988,
-                        appToken: 'KVpPJHcdkZMXyaAsAvsmhz',
-                        title: `Delivery Update`,
-                        message: `${req.body.name} is Delivered`
-                        
-                   });
-                    return res.status(200).json(data)
+                singlesetupDataListener(`profile/${req.uId}`, (arr) => {
+                    console.log(arr)
+                    updateEntry("shippments", id, { status: "DELIVERED" }, async() => {
+                        console.log("Deliverd Updated Record");
+                        if (Expo.isExpoPushToken(arr["expoToken"])) {
+                            console.log("pushing token");
+                            await sendPushNotification(arr["expoToken"], `${req.body.name} is Delivered, please check in App`);
+                        }
+                    })
                 })
+                // updateEntry("shippments", id, { status: "delivered" }, () => {
+                //     console.log("Deliverd Updated Record");
+                //     axios.post(`https://app.nativenotify.com/api/indie/notification`, {
+                //         subID: req.uId,
+                //         appId: 2988,
+                //         appToken: 'KVpPJHcdkZMXyaAsAvsmhz',
+                //         title: `Delivery Update`,
+                //         message: `${req.body.name} is Delivered`
+
+                //     });
+                //     return res.status(200).json(data)
+                // })
 
             } else {
                 return res.status(200).json(data)
@@ -246,7 +308,7 @@ app.post("/tracking", authenticate, async (req, res, next) => {
 
 app.get("/getShipments", authenticate, (req, res, next) => {
 
-   
+
 
 
     console.log("get")

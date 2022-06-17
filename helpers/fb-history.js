@@ -43,7 +43,7 @@ import { firebaseConfig } from "./fb-credentials.js";
     }); */
 
     get(reference).then(snapshot => {
-        console.log("data listener fires up with: ", snapshot)
+       // console.log("data listener fires up with: ", snapshot)
         if(snapshot?.val()){
             const fbObject=snapshot.val();
             const newArr=[];
@@ -64,19 +64,56 @@ import { firebaseConfig } from "./fb-credentials.js";
     });
 }
 
+export function singlesetupDataListener(dbObj,callbackHistory) {
+    console.log("setDataListener called");
+    const db = getDatabase();
+    const reference = ref(db, `${dbObj}/`);
+    /*onValue(reference, (snapshot) => {
+        console.log("data listener fires up with: ", snapshot)
+        if(snapshot?.val()){
+            const fbObject=snapshot.val();
+            const newArr=[];
+            let counter=0;
+            let keys=Object.keys(fbObject);
+            for(let i=0;i<keys.length;i++){
+                //console.log(`${key} || ${index} || ${fbObject[key]}`);
+                newArr.push({...fbObject[keys[i]],id:keys[i],seqId:counter})
+                counter++;
+            }
+            return callbackHistory(newArr);
+        }else{
+            return callbackHistory([]);
+        }
+    }); */
+
+    get(reference).then(snapshot => {
+       // console.log("data listener fires up with: ", snapshot)
+        if(snapshot?.val()){
+            const fbObject=snapshot.val();
+            return callbackHistory(fbObject);
+        }else{
+            return callbackHistory([]);
+        }
+    }).catch(error=>{
+        console.log("get Error")
+        console.log(error)
+    });
+}
+
+
  export function setupDataProfileListener(profile,callbackHistory) {
     console.log("setDataListener called");
     const db = getDatabase();
     const reference = ref(db, `profile/`);
     onValue(reference, (snapshot) => {
-        console.log("data listener fires up with: ", snapshot)
+       // console.log("data listener fires up with: ", snapshot)
         if(snapshot?.val()){
             const fbObject=snapshot.val();
             const newArr=[];
             let counter=0;
             Object.keys(fbObject).map((key,index)=>{
 
-                console.log(`${key} || ${index} || ${fbObject[key]}`);
+               // console.log(`${key} || ${index} || ${fbObject[key]}`);
                 newArr.push({...fbObject[key],id:key,seqId:counter})
                 counter++;
             });
@@ -93,7 +130,7 @@ export function getEntry(dbObj,key,callback) {
     const db = getDatabase();
     const reference = ref(db, `${dbObj}/${key}`);
     onValue(reference, (snapshot) => {
-        console.log("data listener fires up with: ", snapshot)
+      //  console.log("data listener fires up with: ", snapshot)
         if(snapshot?.val()){
             const fbObject=snapshot.val();
             const newArr=[];
