@@ -44,12 +44,27 @@ setInterval(() => {
                     console.log("Dummy records")
                     updateEntry("shippments", item.id, { status: "DELIVERED" }, () => {
                         console.log("Updated Record");
-                        axios.post(`https://app.nativenotify.com/api/indie/notification`, {
-                            subID: item.uId,
-                            appId: 2988,
-                            appToken: 'KVpPJHcdkZMXyaAsAvsmhz',
-                            title: `Delivery Update`,
-                            message: `${item.name} is Delivered`
+                    //     axios.post(`https://app.nativenotify.com/api/indie/notification`, {
+                    //         subID: item.uId,
+                    //         appId: 2988,
+                    //         appToken: 'KVpPJHcdkZMXyaAsAvsmhz',
+                    //         title: `Delivery Update`,
+                    //         message: `${item.name} is Delivered`
+                    //    })
+                       axios.post(`https://app.nativenotify.com/api/indie/notification`, {
+                        subID: item.uId,
+                        appId: 2988,
+                        appToken: "KVpPJHcdkZMXyaAsAvsmhz",
+                        title: `Delivery Update`,
+                        body: `${item.name} is Delivered`,
+                        dateSent: Date.now().toLocaleString(),
+                        pushData: { yourProperty: "yourPropertyValue" }
+                        }).then(response => {
+                            console.log(response)
+                            console.log("Notification has been sent for tracking :"+item.trackingNum);
+                       } )
+                       .catch(error => {
+                           console.error('There was an error!', error);
                        });
 
                     })
