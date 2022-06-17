@@ -97,7 +97,7 @@ setInterval(() => {
                         const response = await fetch(uri, {
                             method: 'post',
                             body: null,
-                            headers: { 'authorization': 'ShippoToken shippo_live_ba9a907276d40482bdc3557ac438d963c238470d' }
+                            headers: { 'authorization': `ShippoToken ${process.env.SHIPPO_TOKEN}` }
                         });
                         const data = await response.json();
                         if (data.tracking_status?.status && data.tracking_status?.status == "DELIVERED") {
@@ -241,7 +241,7 @@ app.post("/addShippment", authenticate, (req, res, next) => {
             const response = await fetch(uri, {
                 method: 'post',
                 body: null,
-                headers: { 'authorization': 'ShippoToken shippo_live_ba9a907276d40482bdc3557ac438d963c238470d' }
+                headers: { 'authorization': `ShippoToken ${process.env.SHIPPO_TOKEN}`}
             });
             const data = await response.json();
             if (data.tracking_status?.status && data.tracking_status?.status == "DELIVERED") {
@@ -289,7 +289,7 @@ app.post("/tracking", authenticate, async (req, res, next) => {
     const response = await fetch(uri, {
         method: 'post',
         body: null,
-        headers: { 'authorization': 'ShippoToken shippo_live_ba9a907276d40482bdc3557ac438d963c238470d' }
+        headers: { 'authorization': `ShippoToken ${process.env.SHIPPO_TOKEN}` }
     });
     const data = await response.json();
     if (data.tracking_status?.status && data.tracking_status?.status == "DELIVERED") {
