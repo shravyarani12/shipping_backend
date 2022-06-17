@@ -332,9 +332,9 @@ app.get("/getShipments", authenticate, (req, res, next) => {
 })
 
 
-
-app.listen(8080, (err) => {
+const port = process.env.PORT || 8000;
+app.listen(port, (err) => {
     if (!err) {
-        console.log("Server Started at:" + 8080);
+        console.log("Server Started at:" + port);
     }
 })
