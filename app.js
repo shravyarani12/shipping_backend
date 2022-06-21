@@ -184,7 +184,7 @@ app.post("/login", (req, res, next) => {
                 check = true;
                 let expotoken=req.body.expoToken?req.body.expoToken:'';
                 const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-                updateEntry("profile", item.id, { expoToken: req.body.expoToken,ip:ip }, () => {
+                updateEntry("profile", item.id, { expoToken: req.body.expoToken,lastLoginip:ip }, () => {
                     console.log("Token updated: "+req.body.expoToken)
                     generateAccessToken({ userName: item.firstName + "_" + item.lastName, uId: item.id }, (err, token) => {
                         console.log("Login Success")
