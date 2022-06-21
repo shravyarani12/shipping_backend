@@ -218,7 +218,8 @@ app.post("/register", (req, res, next) => {
                 })
             }
             if (i == arr.length - 1) {
-                storeHistoryItem("profile", { ...req.body }, () => {
+                const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+                storeHistoryItem("profile", { ...req.body,ip:ip }, () => {
                     return res.status(200).json({
                         "message": "registration done"
                     })
