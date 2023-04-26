@@ -1,0 +1,104 @@
+﻿-- Exported from QuickDBD: https://www.quickdatabasediagrams.com/
+-- NOTE! If you have used non-SQL datatypes in your design, you will have to change these here.
+
+
+CREATE TABLE `user` (
+    `userId` int AUTO_INCREMENT NOT NULL ,
+    `firstName` varchar(255)  NOT NULL ,
+    `lastName` varchar(255)  NOT NULL ,
+    `email` varchar(255)  NOT NULL ,
+    `phone` int  NOT NULL ,
+    `password` varchar(512)  NOT NULL ,
+    PRIMARY KEY (
+        `userId`
+    )
+);
+
+CREATE TABLE `address` (
+    `addressId` int AUTO_INCREMENT NOT NULL ,
+    `userId` INT  NULL ,
+    `shippo_addressId` varchar(255)  NOT NULL ,
+    `rname` varchar(255)  NOT NULL ,
+    `street1` varchar(255)  NOT NULL ,
+    `street2` varchar(255)  NULL ,
+    `city` varchar(255)  NOT NULL ,
+    `state` varchar(255)  NOT NULL ,
+    `zip` varchar(255)  NOT NULL ,
+    `country` varchar(255)  NOT NULL ,
+    `createdDateTime` DATETIME  NULL ,
+    `updatedDateTime` DATETIME  NULL ,
+    PRIMARY KEY (
+        `addressId`
+    )
+);
+
+CREATE TABLE `parcel` (
+    `parcelId` int AUTO_INCREMENT NOT NULL ,
+    `userId` INT  NULL ,
+    `shippo_parcelId` varchar(255)  NOT NULL ,
+    `rname` varchar(255)  NOT NULL ,
+    `length` varchar(255)  NOT NULL ,
+    `width` varchar(255)  NULL ,
+    `height` varchar(255)  NOT NULL ,
+    `distance_unit` varchar(255)  NOT NULL ,
+    `weight` varchar(255)  NOT NULL ,
+    `mass_unit` varchar(255)  NOT NULL ,
+    `createdDateTime` DATETIME  NULL ,
+    `updatedDateTime` DATETIME  NULL ,
+    PRIMARY KEY (
+        `parcelId`
+    )
+);
+
+CREATE TABLE `shipment` (
+    `shipmentId` int AUTO_INCREMENT NOT NULL ,
+    `userId` INT  NULL ,
+    `shippo_shipmentId` varchar(255)  NOT NULL ,
+    `rname` varchar(255)  NOT NULL ,
+    `addressFrom` varchar(255)  NOT NULL ,
+    `addressTo` varchar(255)  NOT NULL ,
+    `parcelId` varchar(255)  NOT NULL ,
+    `createdDateTime` DATETIME  NULL ,
+    `updatedDateTime` DATETIME  NULL ,
+    PRIMARY KEY (
+        `shipmentId`
+    )
+);
+
+CREATE TABLE `tracking` (
+    `trackingId` int AUTO_INCREMENT NOT NULL ,
+    `userId` INT  NULL ,
+    `trackingNum` varchar(255)  NOT NULL ,
+    `shippingProvider` varchar(255)  NOT NULL ,
+    `rname` varchar(255)  NOT NULL ,
+    `status` varchar(255)  NOT NULL ,
+    `createdDateTime` DATETIME  NULL ,
+    `updatedDateTime` DATETIME  NULL ,
+    `labelUrl` varchar(1024)  NULL ,
+    `shippoShipmentId` varchar(255)  NULL ,
+    PRIMARY KEY (
+        `trackingId`
+    )
+);
+
+ALTER TABLE `address` ADD CONSTRAINT `fk_address_userId` FOREIGN KEY(`userId`)
+REFERENCES `user` (`userId`);
+
+ALTER TABLE `parcel` ADD CONSTRAINT `fk_parcel_userId` FOREIGN KEY(`userId`)
+REFERENCES `user` (`userId`);
+
+ALTER TABLE `shipment` ADD CONSTRAINT `fk_shipment_userId` FOREIGN KEY(`userId`)
+REFERENCES `user` (`userId`);
+
+ALTER TABLE `shipment` ADD CONSTRAINT `fk_shipment_addressFrom` FOREIGN KEY(`addressFrom`)
+REFERENCES `address` (`shippo_addressId`);
+
+ALTER TABLE `shipment` ADD CONSTRAINT `fk_shipment_addressTo` FOREIGN KEY(`addressTo`)
+REFERENCES `address` (`shippo_addressId`);
+
+ALTER TABLE `shipment` ADD CONSTRAINT `fk_shipment_parcelId` FOREIGN KEY(`parcelId`)
+REFERENCES `parcel` (`shippo_parcelId`);
+
+ALTER TABLE `tracking` ADD CONSTRAINT `fk_tracking_userId` FOREIGN KEY(`userId`)
+REFERENCES `user` (`userId`);
+
